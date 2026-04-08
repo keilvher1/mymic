@@ -5,9 +5,13 @@ const kakaoProvider = {
   id: 'kakao',
   name: 'Kakao',
   type: 'oauth' as const,
-  authorization: 'https://kauth.kakao.com/oauth/authorize',
+  authorization: {
+    url: 'https://kauth.kakao.com/oauth/authorize',
+    params: { scope: '' },
+  },
   token: 'https://kauth.kakao.com/oauth/token',
   userinfo: 'https://kapi.kakao.com/v2/user/me',
+  idToken: false,
   clientId: process.env.KAKAO_CLIENT_ID!,
   clientSecret: process.env.KAKAO_CLIENT_SECRET!,
   profile(profile: any) {
