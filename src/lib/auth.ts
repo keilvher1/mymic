@@ -12,13 +12,15 @@ const kakaoProvider = {
   token: 'https://kauth.kakao.com/oauth/token',
   userinfo: 'https://kapi.kakao.com/v2/user/me',
   idToken: false,
+  checks: ['state'] as const,
   clientId: process.env.KAKAO_CLIENT_ID!,
   clientSecret: process.env.KAKAO_CLIENT_SECRET!,
   profile(profile: any) {
+    console.log('[NextAuth] Kakao profile response:', JSON.stringify(profile));
     return {
       id: String(profile.id),
-      name: profile.kakao_account?.profile?.nickname || '사용자',
-      image: profile.kakao_account?.profile?.profile_image_url || '',
+      name: profile.kakao_account?.profile?.nickname || profile.properties?.nickname || '사용자',
+      image: profile.kakao_account?.profile?.profile_image_url || profile.properties?.profile_image || '',
       email: profile.kakao_account?.email || `${profile.id}@kakao.user`,
     };
   },
