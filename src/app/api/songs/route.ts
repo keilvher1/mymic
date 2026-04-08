@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import {
   collection,
   addDoc,
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const db = getFirebaseDb();
     const songsRef = collection(db, 'userSongs');
     const q = query(
       songsRef,
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
     const { song, category, moodTags, confidence, tjNumber, kyNumber, memo } = body;
 
     // songs 컬렉션에 곡 정보 upsert (spotifyId로 중복 방지)
+    const db = getFirebaseDb();
     const songsRef = collection(db, 'songs');
     const existingQuery = query(songsRef, where('spotifyId', '==', song.spotifyId));
     const existing = await getDocs(existingQuery);

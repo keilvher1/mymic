@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 
 // PATCH: 애창곡 수정
@@ -14,6 +14,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const db = getFirebaseDb();
     const songRef = doc(db, 'userSongs', params.id);
 
     await updateDoc(songRef, {
@@ -39,6 +40,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const db = getFirebaseDb();
     const songRef = doc(db, 'userSongs', params.id);
     await deleteDoc(songRef);
 

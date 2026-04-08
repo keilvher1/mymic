@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import {
   collection,
   addDoc,
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const db = getFirebaseDb();
     const listsRef = collection(db, 'sharedLists');
     const q = query(listsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
 
     const shareCode = generateShareCode();
 
+    const db = getFirebaseDb();
     const docRef = await addDoc(collection(db, 'sharedLists'), {
       userId,
       title: title || '내 애창곡 리스트',
