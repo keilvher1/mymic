@@ -9,10 +9,15 @@ const kakaoProvider = {
     url: 'https://kauth.kakao.com/oauth/authorize',
     params: { scope: '' },
   },
-  token: 'https://kauth.kakao.com/oauth/token',
+  token: {
+    url: 'https://kauth.kakao.com/oauth/token',
+  },
   userinfo: 'https://kapi.kakao.com/v2/user/me',
   idToken: false,
   checks: ['state'] as ('state')[],
+  client: {
+    token_endpoint_auth_method: 'client_secret_post',
+  },
   clientId: process.env.KAKAO_CLIENT_ID!,
   clientSecret: process.env.KAKAO_CLIENT_SECRET!,
   profile(profile: any) {
