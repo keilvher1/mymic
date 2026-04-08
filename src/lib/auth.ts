@@ -5,10 +5,7 @@ const kakaoProvider = {
   id: 'kakao',
   name: 'Kakao',
   type: 'oauth' as const,
-  authorization: {
-    url: 'https://kauth.kakao.com/oauth/authorize',
-    params: { scope: 'profile_nickname profile_image' },
-  },
+  authorization: 'https://kauth.kakao.com/oauth/authorize',
   token: 'https://kauth.kakao.com/oauth/token',
   userinfo: 'https://kapi.kakao.com/v2/user/me',
   clientId: process.env.KAKAO_CLIENT_ID!,
@@ -43,4 +40,5 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: true,
 };
