@@ -12,7 +12,7 @@ const kakaoProvider = {
   token: 'https://kauth.kakao.com/oauth/token',
   userinfo: 'https://kapi.kakao.com/v2/user/me',
   idToken: false,
-  checks: ['state'] as const,
+  checks: ['state'] as ('state')[],
   clientId: process.env.KAKAO_CLIENT_ID!,
   clientSecret: process.env.KAKAO_CLIENT_SECRET!,
   profile(profile: any) {
