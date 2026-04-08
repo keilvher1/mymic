@@ -13,6 +13,7 @@ import {
   UserCheck,
   UserX,
   Music,
+  Share2,
 } from 'lucide-react';
 
 interface User {
