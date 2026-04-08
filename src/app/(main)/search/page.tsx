@@ -44,9 +44,45 @@ export default function SearchPage() {
     if (e.key === 'Enter') handleSearch();
   };
 
-  const handleAddSong = (song: SpotifySearchResult) => {
-    // TODO: 바텀시트 열기 → 태그/번호/메모 입력 → Firestore 저장
-    alert(`"${song.title}" 추가 기능은 Firebase 연결 후 사용 가능합니다.`);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  const handleAddSong = async (song: SpotifySearchResult) => {
+    if (addingId || addedIds.has(song.spotifyId)) return;
+    setAddingId(song.spotifyId);
+    try {
+      const res = await fetch('/api/songs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': 'user_default',
+        },
+        body: JSON.stringify({
+          song: {
+            spotifyId: song.spotifyId,
+            title: song.title,
+            artist: song.artist,
+            albumName: song.albumName,
+            albumArtUrl: song.albumArtUrl,
+            previewUrl: song.previewUrl,
+            durationMs: song.durationMs,
+          },
+          category: 'kpop',
+          moodTags: [],
+          confidence: 3,
+        }),
+      });
+      if (res.ok) {
+        setAddedIds(prev => new Set(prev).add(song.spotifyId));
+      } else {
+        alert('저장 실패');
+      }
+    } catch (error) {
+      console.error('Add song error:', error);
+      alert('저장 중 오류 발생');
+    } finally {
+      setAddingId(null);
+    }
   };
 
   return (
@@ -127,9 +163,21 @@ export default function SearchPage() {
                   )}
                   <button
                     onClick={() => handleAddSong(track)}
-                    className="p-2 rounded-full bg-primary/20 hover:bg-primary/30 transition-colors"
+                    disabled={addingId === track.spotifyId || addedIds.has(track.spotifyId)}
+                    className={cn(
+                      "p-2 rounded-full transition-colors",
+                      addedIds.has(track.spotifyId)
+                        ? "bg-green-500/20 cursor-default"
+                        : "bg-primary/20 hover:bg-primary/30"
+                    )}
                   >
-                    <Plus size={16} className="text-primary-light" />
+                    {addingId === track.spotifyId ? (
+                      <Loader2 size={16} className="text-primary-light animate-spin" />
+                    ) : addedIds.has(track.spotifyId) ? (
+                      <span className="text-green-400 text-xs font-bold">✓</span>
+                    ) : (
+                      <Plus size={16} className="text-primary-light" />
+                    )}
                   </button>
                 </div>
               </div>
