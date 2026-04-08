@@ -1,16 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Search,
   Plus,
-  Edit3,
   Trash2,
-  Music,
   X,
-  Save,
-  ChevronLeft,
-  ChevronRight,
+  Music,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
   ArrowUpDown,
 } from 'lucide-react';
 
@@ -21,327 +20,293 @@ interface Song {
   genre: string;
   tjNumber: string;
   kyNumber: string;
+  albumArtUrl: string;
+  spotifyId: string;
   savedBy: number;
   addedAt: string;
 }
 
-const mockSongs: Song[] = [
-  { id: '1', title: 'APT.', artist: 'ROSÉ & Bruno Mars', genre: 'K-POP', tjNumber: '51456', kyNumber: '96012', savedBy: 342, addedAt: '2026-04-08' },
-  { id: '2', title: 'Whiplash', artist: 'aespa', genre: 'K-POP', tjNumber: '51389', kyNumber: '95987', savedBy: 289, addedAt: '2026-04-07' },
-  { id: '3', title: 'Hype Boy', artist: 'NewJeans', genre: 'K-POP', tjNumber: '50713', kyNumber: '95478', savedBy: 256, addedAt: '2026-03-15' },
-  { id: '4', title: '사건의 지평선', artist: '윤하', genre: '발라드', tjNumber: '49876', kyNumber: '94210', savedBy: 234, addedAt: '2026-02-20' },
-  { id: '5', title: 'Seven', artist: '정국 (Jung Kook)', genre: 'K-POP', tjNumber: '50589', kyNumber: '95302', savedBy: 198, addedAt: '2026-03-10' },
-  { id: '6', title: 'Perfect Night', artist: 'LE SSERAFIM', genre: 'K-POP', tjNumber: '51234', kyNumber: '', savedBy: 187, addedAt: '2026-03-22' },
-  { id: '7', title: '밤양갱', artist: '비비 (BIBI)', genre: 'K-POP', tjNumber: '51567', kyNumber: '96045', savedBy: 176, addedAt: '2026-04-01' },
-  { id: '8', title: '첫사랑', artist: '백아', genre: '발라드', tjNumber: '51290', kyNumber: '95890', savedBy: 165, addedAt: '2026-03-28' },
-  { id: '9', title: 'Supernova', artist: 'aespa', genre: 'K-POP', tjNumber: '51345', kyNumber: '95945', savedBy: 154, addedAt: '2026-04-02' },
-  { id: '10', title: '고민중독', artist: 'QWER', genre: 'Rock', tjNumber: '51478', kyNumber: '96034', savedBy: 143, addedAt: '2026-04-05' },
-];
+const GENRE_LABELS: Record<string, string> = {
+  kpop: 'K-POP', ballad: '발라드', rnb: 'R&B', hiphop: '힙합',
+  rock: '록', trot: '트로트', pop: 'POP', etc: '기타',
+};
 
-const genres = ['전체', 'K-POP', '발라드', 'R&B', '힙합', 'Rock', 'Trot'];
+const GENRE_COLORS: Record<string, string> = {
+  kpop: 'bg-purple-400/10 text-purple-400', ballad: 'bg-cyan-400/10 text-cyan-400',
+  rnb: 'bg-pink-400/10 text-pink-400', hiphop: 'bg-yellow-400/10 text-yellow-400',
+  rock: 'bg-red-400/10 text-red-400', trot: 'bg-green-400/10 text-green-400',
+  pop: 'bg-violet-400/10 text-violet-400', etc: 'bg-gray-400/10 text-gray-400',
+};
 
-export default function SongsPage() {
+export default function AdminSongsPage() {
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [genreFilter, setGenreFilter] = useState('전체');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editSong, setEditSong] = useState<Song | null>(null);
+  const [genreFilter, setGenreFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'savedBy' | 'addedAt'>('savedBy');
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ title: '', artist: '', genre: 'etc', tjNumber: '', kyNumber: '' });
 
-  const filtered = mockSongs
-    .filter((s) => {
-      const matchSearch =
-        s.title.toLowerCase().includes(search.toLowerCase()) ||
-        s.artist.toLowerCase().includes(search.toLowerCase()) ||
-        s.tjNumber.includes(search) ||
-        s.kyNumber.includes(search);
-      const matchGenre = genreFilter === '전체' || s.genre === genreFilter;
-      return matchSearch && matchGenre;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'savedBy') return b.savedBy - a.savedBy;
-      return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
-    });
+  useEffect(() => { fetchSongs(); }, []);
+
+  const fetchSongs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch('/api/admin/songs');
+      if (!res.ok) throw new Error('Failed to fetch songs');
+      const data = await res.json();
+      setSongs(data.songs);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddSong = async () => {
+    if (!formData.title || !formData.artist) return;
+    try {
+      const res = await fetch('/api/admin/songs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error('Failed to add song');
+      setShowModal(false);
+      setFormData({ title: '', artist: '', genre: 'etc', tjNumber: '', kyNumber: '' });
+      fetchSongs();
+    } catch (err: any) {
+      alert('곡 추가 실패: ' + err.message);
+    }
+  };
+
+  const handleDeleteSong = async (songId: string) => {
+    if (!confirm('정말 이 곡을 삭제하시겠습니까?')) return;
+    try {
+      const res = await fetch('/api/admin/songs', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ songId }),
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+      setSongs(prev => prev.filter(s => s.id !== songId));
+    } catch (err: any) {
+      alert('삭제 실패: ' + err.message);
+    }
+  };
+
+  const availableGenres = useMemo(() => {
+    const genres = new Set(songs.map(s => s.genre));
+    return Array.from(genres);
+  }, [songs]);
+
+  const filteredSongs = useMemo(() => {
+    return songs
+      .filter(song => {
+        const matchSearch = !search ||
+          song.title.toLowerCase().includes(search.toLowerCase()) ||
+          song.artist.toLowerCase().includes(search.toLowerCase()) ||
+          song.tjNumber.includes(search) ||
+          song.kyNumber.includes(search);
+        const matchGenre = genreFilter === 'all' || song.genre === genreFilter;
+        return matchSearch && matchGenre;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'savedBy') return b.savedBy - a.savedBy;
+        return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+      });
+  }, [songs, search, genreFilter, sortBy]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-primary" size={32} />
+        <span className="ml-3 text-gray-400">곡 데이터 로딩 중...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <AlertCircle size={48} className="text-red-400 mb-4" />
+        <p className="text-lg font-medium text-red-400">{error}</p>
+        <button onClick={fetchSongs} className="mt-4 px-4 py-2 rounded-lg bg-primary/20 text-primary-light text-sm">다시 시도</button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-heading font-bold text-2xl">곡 관리</h1>
-          <p className="text-sm text-gray-400 mt-1">
-            총 {mockSongs.length.toLocaleString()}곡이 등록되어 있습니다
-          </p>
+          <p className="text-sm text-gray-400 mt-1">총 {songs.length}곡 등록됨</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center gap-2 text-sm"
-        >
-          <Plus size={16} /> 새 곡 추가
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={fetchSongs} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 text-xs text-gray-400 hover:bg-white/10 transition-colors">
+            <RefreshCw size={12} /> 새로고침
+          </button>
+          <button
+            onClick={() => { setFormData({ title: '', artist: '', genre: 'etc', tjNumber: '', kyNumber: '' }); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary/80 transition-colors"
+          >
+            <Plus size={16} /> 곡 추가
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
+      {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search
-            size={16}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"
-          />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             type="text"
-            placeholder="곡 제목, 가수, 번호로 검색..."
-            className="input-dark w-full pl-10 py-2.5 text-sm"
+            placeholder="곡명, 아티스트, TJ/KY 번호로 검색..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 bg-surface-light rounded-xl text-sm border border-white/5 focus:border-primary/30 focus:outline-none"
           />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {genres.map((g) => (
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <button
+            onClick={() => setGenreFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              genreFilter === 'all' ? 'bg-primary/20 text-primary-light border border-primary/30' : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+          >
+            전체
+          </button>
+          {availableGenres.map(g => (
             <button
               key={g}
               onClick={() => setGenreFilter(g)}
-              className={`px-3 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                genreFilter === g
-                  ? 'bg-primary/20 text-primary-light border border-primary/30'
-                  : 'bg-surface-light text-gray-400 border border-white/5 hover:bg-white/5'
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                genreFilter === g ? 'bg-primary/20 text-primary-light border border-primary/30' : 'bg-white/5 text-gray-400 hover:bg-white/10'
               }`}
             >
-              {g}
+              {GENRE_LABELS[g] || g}
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Sort */}
-      <div className="flex items-center gap-2 mb-4">
-        <ArrowUpDown size={14} className="text-gray-500" />
-        <span className="text-xs text-gray-500">정렬:</span>
         <button
-          onClick={() => setSortBy('savedBy')}
-          className={`text-xs px-2 py-1 rounded-lg ${
-            sortBy === 'savedBy'
-              ? 'bg-primary/20 text-primary-light'
-              : 'text-gray-400 hover:text-white'
-          }`}
+          onClick={() => setSortBy(sortBy === 'savedBy' ? 'addedAt' : 'savedBy')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 text-xs text-gray-400 hover:bg-white/10 whitespace-nowrap"
         >
-          저장 많은순
-        </button>
-        <button
-          onClick={() => setSortBy('addedAt')}
-          className={`text-xs px-2 py-1 rounded-lg ${
-            sortBy === 'addedAt'
-              ? 'bg-primary/20 text-primary-light'
-              : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          최신순
+          <ArrowUpDown size={12} />
+          {sortBy === 'savedBy' ? '저장순' : '최신순'}
         </button>
       </div>
 
-      {/* Table */}
-      <div className="card-neon rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/5">
-                <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-4">
-                  곡 정보
-                </th>
-                <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-4">
-                  장르
-                </th>
-                <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-4">
-                  TJ
-                </th>
-                <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-4">
-                  KY
-                </th>
-                <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-4">
-                  저장수
-                </th>
-                <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-4">
-                  등록일
-                </th>
-                <th className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider px-5 py-4">
-                  액션
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((song) => (
-                <tr
-                  key={song.id}
-                  className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
-                >
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-surface-light flex items-center justify-center">
-                        <Music size={16} className="text-gray-500" />
+      {/* Songs Table */}
+      {filteredSongs.length === 0 ? (
+        <div className="card-neon rounded-2xl p-12 text-center">
+          <Music size={48} className="text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-500">{songs.length === 0 ? '등록된 곡이 없습니다' : '검색 결과가 없습니다'}</p>
+        </div>
+      ) : (
+        <div className="card-neon rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">곡 정보</th>
+                  <th className="text-center text-xs font-medium text-gray-500 px-5 py-3">장르</th>
+                  <th className="text-center text-xs font-medium text-gray-500 px-5 py-3">TJ</th>
+                  <th className="text-center text-xs font-medium text-gray-500 px-5 py-3">KY</th>
+                  <th className="text-center text-xs font-medium text-gray-500 px-5 py-3">저장 수</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">등록일</th>
+                  <th className="text-center text-xs font-medium text-gray-500 px-5 py-3">액션</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSongs.map((song) => (
+                  <tr key={song.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        {song.albumArtUrl ? (
+                          <img src={song.albumArtUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gradient-neon flex items-center justify-center">
+                            <Music size={16} />
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium">{song.title}</p>
+                          <p className="text-[11px] text-gray-500">{song.artist}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{song.title}</p>
-                        <p className="text-xs text-gray-500">{song.artist}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <span className="text-xs px-2 py-1 rounded-lg bg-primary/10 text-primary-light">
-                      {song.genre}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <span className="text-xs font-mono text-gray-300">
-                      {song.tjNumber || '-'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <span className="text-xs font-mono text-gray-300">
-                      {song.kyNumber || '-'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <span className="text-sm font-semibold text-secondary-light">
-                      {song.savedBy}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className="text-xs text-gray-400">{song.addedAt}</span>
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1">
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${GENRE_COLORS[song.genre] || 'bg-gray-400/10 text-gray-400'}`}>
+                        {GENRE_LABELS[song.genre] || song.genre}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-center text-xs text-gray-400 font-mono">{song.tjNumber || '-'}</td>
+                    <td className="px-5 py-3 text-center text-xs text-gray-400 font-mono">{song.kyNumber || '-'}</td>
+                    <td className="px-5 py-3 text-center">
+                      <span className="text-sm font-medium text-primary-light">{song.savedBy}</span>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-gray-400">{new Date(song.addedAt).toLocaleDateString('ko-KR')}</td>
+                    <td className="px-5 py-3 text-center">
                       <button
-                        onClick={() => setEditSong(song)}
-                        className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                        onClick={() => handleDeleteSong(song.id)}
+                        className="p-1.5 rounded-lg hover:bg-red-400/10 text-gray-500 hover:text-red-400 transition-colors"
                       >
-                        <Edit3 size={14} />
-                      </button>
-                      <button className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors">
                         <Trash2 size={14} />
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="flex items-center justify-between px-5 py-4 border-t border-white/5">
-          <p className="text-xs text-gray-500">
-            {filtered.length}곡 중 1-{Math.min(filtered.length, 10)} 표시
-          </p>
-          <div className="flex items-center gap-1">
-            <button className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500">
-              <ChevronLeft size={16} />
-            </button>
-            <button className="w-8 h-8 rounded-lg bg-primary/20 text-primary-light text-xs font-medium">
-              1
-            </button>
-            <button className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500">
-              <ChevronRight size={16} />
-            </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Add/Edit Modal */}
-      {(showAddModal || editSong) && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => {
-            setShowAddModal(false);
-            setEditSong(null);
-          }}
-        >
-          <div
-            className="card-neon p-6 rounded-2xl w-full max-w-md mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
+      {/* Add Song Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-surface border border-white/10 rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-heading font-bold text-lg">
-                {editSong ? '곡 수정' : '새 곡 추가'}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setEditSong(null);
-                }}
-                className="p-1.5 rounded-lg hover:bg-white/10"
-              >
-                <X size={18} className="text-gray-400" />
-              </button>
+              <h3 className="font-heading font-bold text-lg">곡 추가</h3>
+              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-white/10"><X size={18} /></button>
             </div>
-
             <div className="space-y-4">
               <div>
-                <label className="text-xs text-gray-400 mb-1.5 block">곡 제목</label>
-                <input
-                  type="text"
-                  className="input-dark w-full text-sm"
-                  placeholder="곡 제목 입력"
-                  defaultValue={editSong?.title || ''}
-                />
+                <label className="text-xs text-gray-400 mb-1 block">곡 제목 *</label>
+                <input type="text" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3 py-2.5 bg-surface-light rounded-xl text-sm border border-white/5 focus:border-primary/30 focus:outline-none" placeholder="곡 제목" />
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1.5 block">아티스트</label>
-                <input
-                  type="text"
-                  className="input-dark w-full text-sm"
-                  placeholder="아티스트 이름"
-                  defaultValue={editSong?.artist || ''}
-                />
+                <label className="text-xs text-gray-400 mb-1 block">아티스트 *</label>
+                <input type="text" value={formData.artist} onChange={(e) => setFormData({ ...formData, artist: e.target.value })}
+                  className="w-full px-3 py-2.5 bg-surface-light rounded-xl text-sm border border-white/5 focus:border-primary/30 focus:outline-none" placeholder="아티스트" />
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1.5 block">장르</label>
-                <select
-                  className="input-dark w-full text-sm"
-                  defaultValue={editSong?.genre || ''}
-                >
-                  <option value="">장르 선택</option>
-                  {genres.filter((g) => g !== '전체').map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
+                <label className="text-xs text-gray-400 mb-1 block">장르</label>
+                <select value={formData.genre} onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
+                  className="w-full px-3 py-2.5 bg-surface-light rounded-xl text-sm border border-white/5 focus:border-primary/30 focus:outline-none">
+                  {Object.entries(GENRE_LABELS).map(([k, v]) => (<option key={k} value={k}>{v}</option>))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-400 mb-1.5 block">
-                    TJ 번호
-                  </label>
-                  <input
-                    type="text"
-                    className="input-dark w-full text-sm"
-                    placeholder="TJ 번호"
-                    defaultValue={editSong?.tjNumber || ''}
-                  />
+                  <label className="text-xs text-gray-400 mb-1 block">TJ 번호</label>
+                  <input type="text" value={formData.tjNumber} onChange={(e) => setFormData({ ...formData, tjNumber: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-surface-light rounded-xl text-sm border border-white/5 focus:border-primary/30 focus:outline-none" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 mb-1.5 block">
-                    KY 번호
-                  </label>
-                  <input
-                    type="text"
-                    className="input-dark w-full text-sm"
-                    placeholder="KY 번호"
-                    defaultValue={editSong?.kyNumber || ''}
-                  />
+                  <label className="text-xs text-gray-400 mb-1 block">KY 번호</label>
+                  <input type="text" value={formData.kyNumber} onChange={(e) => setFormData({ ...formData, kyNumber: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-surface-light rounded-xl text-sm border border-white/5 focus:border-primary/30 focus:outline-none" />
                 </div>
               </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setEditSong(null);
-                }}
-                className="btn-secondary flex-1 text-sm"
-              >
-                취소
-              </button>
-              <button className="btn-primary flex-1 flex items-center justify-center gap-2 text-sm">
-                <Save size={14} /> {editSong ? '수정' : '추가'}
+              <button onClick={handleAddSong} disabled={!formData.title || !formData.artist}
+                className="w-full py-2.5 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                추가하기
               </button>
             </div>
           </div>
