@@ -1,11 +1,12 @@
 'use client';
 
+import { signIn } from 'next-auth/react';
 import { Mic } from 'lucide-react';
 
 export default function LoginPage() {
   const handleKakaoLogin = () => {
-    // NextAuth 카카오 로그인으로 리다이렉트
-    window.location.href = '/api/auth/signin/kakao';
+    // NextAuth signIn 함수로 카카오 OAuth 플로우 시작
+    signIn('kakao', { callbackUrl: '/home' });
   };
 
   return (
