@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --background: #0F0F12;
+    --foreground: #FFFFFF;
+    --surface: #1A1A2E;
+    --surface-light: #25253D;
+    --primary: #7C3AED;
+    --secondary: #06B6D4;
+    --tertiary: #FF2D55;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Be Vietnam Pro', 'Pretendard', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', 'Pretendard', sans-serif;
+  }
+}
+
+@layer components {
+  .card-neon {
+    @apply bg-surface-card rounded-2xl border border-white/5 backdrop-blur-sm;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white font-semibold py-3 px-6 rounded-xl
+           hover:bg-primary-dark active:scale-95 transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-light text-white font-medium py-3 px-6 rounded-xl
+           border border-white/10 hover:bg-white/10 active:scale-95 transition-all duration-200;
+  }
+
+  .btn-kakao {
+    @apply bg-[#FEE500] text-[#191919] font-semibold py-3 px-6 rounded-xl
+           hover:bg-[#F5DC00] active:scale-95 transition-all duration-200;
+  }
+
+  .input-dark {
+    @apply bg-surface-light border border-white/10 text-white placeholder:text-gray-500
+           rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary
+           transition-all duration-200;
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  .tag-chip {
+    @apply px-3 py-1.5 rounded-full text-sm font-medium bg-surface-light border border-white/10
+           hover:border-primary hover:bg-primary/20 transition-all duration-200 cursor-pointer;
+  }
+
+  .tag-chip-active {
+    @apply px-3 py-1.5 rounded-full text-sm font-medium bg-primary/20 border border-primary
+           text-primary-light;
+  }
+
+  .neon-glow {
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.3), 0 0 30px rgba(124, 58, 237, 0.1);
+  }
+
+  .neon-glow-pink {
+    box-shadow: 0 0 15px rgba(255, 45, 85, 0.3), 0 0 30px rgba(255, 45, 85, 0.1);
+  }
+}
+
+/* 스크롤바 커스터마이즈 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.5);
+}
+
+/* 하단 네비 safe area */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 80px);
+}
