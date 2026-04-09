@@ -5,6 +5,7 @@ import { Search as SearchIcon, X, Music, Plus, Play, Loader2 } from 'lucide-reac
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/utils';
+import { useUser } from '@/hooks/useUser';
 import type { SpotifySearchResult } from '@/types';
 
 const GENRE_CARDS = [
@@ -17,6 +18,7 @@ const GENRE_CARDS = [
 ];
 
 export default function SearchPage() {
+  const { userId } = useUser();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SpotifySearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -55,7 +57,7 @@ export default function SearchPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': 'user_default',
+          'x-user-id': userId,
         },
         body: JSON.stringify({
           song: {
