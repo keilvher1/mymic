@@ -6,7 +6,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
 import { generateShareCode } from '@/lib/utils';
@@ -21,13 +20,19 @@ export async function GET(request: NextRequest) {
 
     const db = getFirebaseDb();
     const listsRef = collection(db, 'sharedLists');
-    const q = query(listsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const q = query(listsRef, where('userId', '==', userId));
     const snapshot = await getDocs(q);
 
-    const lists = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const lists = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a: any, b: any) => {
+        const aTime = a.createdAt?.seconds || 0;
+        const bTime = b.createdAt?.seconds || 0;
+        return bTime - aTime;
+      });
 
     return NextResponse.json(lists);
   } catch (error) {

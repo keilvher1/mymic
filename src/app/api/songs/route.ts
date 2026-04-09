@@ -6,7 +6,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
 
@@ -22,15 +21,16 @@ export async function GET(request: NextRequest) {
     const songsRef = collection(db, 'userSongs');
     const q = query(
       songsRef,
-      where('userId', '==', userId),
-      orderBy('sortOrder', 'asc')
+      where('userId', '==', userId)
     );
 
     const snapshot = await getDocs(q);
-    const songs = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const songs = snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
     return NextResponse.json(songs);
   } catch (error) {
